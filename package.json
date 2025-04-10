@@ -15,6 +15,7 @@
   "dependencies": {
     "@langchain/community": "^0.3.39",
     "@langchain/langgraph": "^0.2.62",
+    "@langchain/langgraph-sdk": "^0.0.66",
     "@langchain/openai": "^0.5.2",
     "cheerio": "^1.0.0",
     "zod": "^3.24.2"
