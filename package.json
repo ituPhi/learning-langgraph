@@ -16,8 +16,11 @@
     "@langchain/community": "^0.3.39",
     "@langchain/langgraph": "^0.2.62",
     "@langchain/langgraph-sdk": "^0.0.66",
+    "@langchain/mcp-adapters": "^0.4.2",
     "@langchain/openai": "^0.5.2",
     "cheerio": "^1.0.0",
+    "eventsource": "^3.0.6",
+    "extended-eventsource": "^2.1.0",
     "zod": "^3.24.2"
   },
   "overrides": {
