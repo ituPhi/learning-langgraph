@@ -5,7 +5,8 @@
     "agent-router": "./src/router/graph.ts:graph",
     "tool-router": "./src/tool-router/graph.ts:graph",
     "parallelization": "./src/parallelization/graph.ts:graph",
-    "mcp": "./src/mcp-adapter/graph.ts:graph"
+    "mcp": "./src/mcp-adapter/graph.ts:graph",
+    "playwright": "./src/mcp-adapter/graph-p.ts:graph"
   },
   "env": ".env",
   "dependencies": ["."]
