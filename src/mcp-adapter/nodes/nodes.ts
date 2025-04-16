@@ -19,7 +19,9 @@ import {
 } from "@langchain/core/messages";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 
-export const extractor = async (state: typeof MessagesAnnotation.State) => {
+import { StateAnnotation } from "../graph";
+
+export const extractor = async (state: typeof StateAnnotation.State) => {
   const schema = z.object({
     intent: z.string().describe("This is what the user wants to do"),
     url: z.string().describe("The user url"),
@@ -30,7 +32,7 @@ export const extractor = async (state: typeof MessagesAnnotation.State) => {
     model: "gpt-4o",
   }).withStructuredOutput(schema);
   const userMessage = state.messages[0].content;
-
+  //console.log(userMessage);
   const result = await model.invoke([
     {
       role: "system",
@@ -55,26 +57,51 @@ export const extractor = async (state: typeof MessagesAnnotation.State) => {
         Return the intent as a brief description of what the user wants to do with the URL.`,
     },
   ]);
+  const newMsg = new AIMessage({
+    content: {
+      intent: result.intent,
+      url: result.url,
+    },
+  }) as AIMessage;
+  const mess = { messages: [...state.messages, newMsg] };
+  console.log(mess);
 
-  return { messages: [new AIMessage(result)] };
+  return { messages: [...state.messages, newMsg] };
 };
 
-//const r = extractor({
-//  messages: [new HumanMessage("I need Seo help with i2phi.com")],
-//});
-//console.log(await r);
+export const router = async (state: typeof extractorAnnotation.State) => {
+  console.log(state.url);
+  const routerSchema = z.object({
+    step: z.enum(["SEO", "CRO", "UX"]).describe(" the next step to router to"),
+    url: z.string(),
+  });
+  const modelRouter = new ChatOpenAI({
+    apiKey: process.env.OPENAI_KEY,
+    model: "gpt-3.5-turbo",
+  }).withStructuredOutput(routerSchema);
 
-export const router = async (state: typeof MessagesAnnotation.State) => {};
+  const routerDecision = await modelRouter.invoke([
+    {
+      role: "system",
+      content: `you are a router model select between "SEO", "CRO" and "UX" acconding to this intent: ${state.intent}, pass the url along making sure is correctly formated ${state.url}`,
+    },
+  ]);
 
-export const playwirghtAgent = async (
-  state: typeof MessagesAnnotation.State,
-) => {
+  // console.log(routerDecision);
+  return {
+    step: routerDecision.step,
+    url: routerDecision.url,
+  };
+};
+
+export const playwirghtAgent = async (state) => {
+  console.log(state);
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
   // Path to the Playwright MCP server
   const playwrightServerPath = path.join(
     __dirname,
-    "../mcp-adapter/servers/mcp-playwright/dist/index.js",
+    "../../mcp-adapter/servers/mcp-playwright/dist/index.js",
   );
 
   const client = new Client({
@@ -106,18 +133,53 @@ export const playwirghtAgent = async (
   }).bindTools(tools);
 
   const systemMessage = new SystemMessage(
-    `You are a web automation assistant that can control browsers using Playwright you will extract the url in the input and correct it!!.
+    `You are a web automation assistant that can control browsers using Playwright. You will extract the URL in the input and correct it.
     You can help users automate tasks on websites, fill forms, take screenshots, and extract information. For selectors, prefer simple, robust selectors like IDs (#login-button) or specific attributes ([data-test="submit"]).
-         When users ask you to automate a web task, break it down into clear steps and use the appropriate tools for each step.`,
+    When users ask you to automate a web task, break it down into clear steps and use the appropriate tools for each step.`,
   );
-  const messagesWithSystem = [systemMessage, ...state.messages];
+
+  const userMessage = new HumanMessage(`The URL to process is: ${state.url}`);
+  const messagesWithSystem = [systemMessage, userMessage, ...state.messages];
   const message = await model.invoke(messagesWithSystem);
   return {
     messages: [message],
   };
+
   process.on("beforeExit", async () => {
     if (client) {
       await client.close();
     }
   });
+};
+
+export const croAgent = async (state: typeof MessagesAnnotation.State) => {
+  const model = new ChatOpenAI({
+    modelName: "gpt-4o",
+    apiKey: process.env.OPENAI_KEY,
+  });
+
+  const systemMessage = new SystemMessage(
+    `You are a web automation assistant CRO EXPERT respond short`,
+  );
+
+  const messagesWithSystem = [systemMessage, ...state.messages];
+  const message = await model.invoke(messagesWithSystem);
+  return {
+    messages: [message],
+  };
+};
+
+export const userAgent = async (state: typeof MessagesAnnotation.State) => {
+  const model = new ChatOpenAI({
+    modelName: "gpt-4o",
+    apiKey: process.env.OPENAI_KEY,
+  });
+
+  const prompt = new SystemMessage(
+    "Yuu are a user experience expert, repond very shortly saying hi",
+  );
+
+  const messages = [...state.messages, prompt];
+  const response = model.invoke(messages);
+  return response;
 };
