@@ -1,18 +1,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { loadMcpTools } from "@langchain/mcp-adapters";
-import path from "path";
-import { fileURLToPath } from "url";
-import {
-  AIMessage,
-  SystemMessage,
-  HumanMessage,
-} from "@langchain/core/messages";
-import { ToolNode } from "@langchain/langgraph/prebuilt";
+import { AIMessage, SystemMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
-
 import { SharedAnnotation, StateAnnotation } from "../graph";
 
 export const extractor = async (state: typeof SharedAnnotation.State) => {
@@ -31,7 +20,8 @@ export const extractor = async (state: typeof SharedAnnotation.State) => {
     model: "gpt-4o",
   }).withStructuredOutput(schema);
 
-  const userMessage = state.messages[0].content;
+  const userMessage = state.messages[state.messages.length - 1].content;
+  console.log("userMessage:", userMessage);
   const result = await model.invoke([
     {
       role: "system",
@@ -67,34 +57,6 @@ export const extractor = async (state: typeof SharedAnnotation.State) => {
   };
 };
 
-export const router = async (state: typeof SharedAnnotation) => {
-  const message = state["messages"];
-  const info = message[message.length - 1].content;
-  console.log(info);
-
-  const routerSchema = z.object({
-    step: z.enum(["SEO", "CRO", "UX"]).describe(" the next step to router to"),
-    url: z.string(),
-  });
-  const modelRouter = new ChatOpenAI({
-    apiKey: process.env.OPENAI_KEY,
-    model: "gpt-3.5-turbo",
-  }).withStructuredOutput(routerSchema);
-
-  const routerDecision = await modelRouter.invoke([
-    {
-      role: "system",
-      content: `you are a router model select between "SEO", "CRO" and "UX" acconding to this info : ${info}`,
-    },
-  ]);
-
-  console.log(routerDecision);
-  return {
-    step: routerDecision.step,
-    url: routerDecision.url,
-  };
-};
-
 export const routerAgent = async (state: typeof SharedAnnotation) => {
   console.log("routerAgent running");
   const url = state["url"];
@@ -108,75 +70,45 @@ export const routerAgent = async (state: typeof SharedAnnotation) => {
     } else if (intent.includes("UX")) {
       return "UX";
     } else {
-      return "SEO";
+      return "AGENT";
     }
   };
+
   let decision = goto(intent);
   console.log("router agent decision:", decision);
 
-  return new Command({
-    update: {},
-    goto: decision,
-  });
+  if (decision === "SEO") {
+    //console.log("state inside condition on router", state);
+    return new Command({
+      update: {
+        messages: [],
+        url: "url",
+        intent: state["intent"],
+      },
+      goto: decision,
+    });
+  } else {
+    return new Command({
+      update: {},
+      goto: "AGENT",
+    });
+  }
 };
 
-export const playwirghtAgent = async (state: typeof StateAnnotation) => {
-  console.log("PW Agent Running");
-  console.log(state);
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-  // Path to the Playwright MCP server
-  const playwrightServerPath = path.join(
-    __dirname,
-    "../../mcp-adapter/servers/mcp-playwright/dist/index.js",
-  );
-
-  const client = new Client({
-    name: "playwright-client",
-    version: "1.0.0",
-  });
-
-  const transport = new StdioClientTransport({
-    command: "node",
-    args: [playwrightServerPath],
-  });
-
-  let tools;
-
-  // Connect to the transport
-  await client.connect(transport);
-
-  tools = await loadMcpTools("playwright", client, {
-    throwOnLoadError: true,
-    prefixToolNameWithServerName: false,
-    additionalToolNamePrefix: "",
-  });
-
-  const toolNode = new ToolNode(tools);
-
+export const defaultAgent = async (state: typeof StateAnnotation) => {
   const model = new ChatOpenAI({
     modelName: "gpt-4o",
     apiKey: process.env.OPENAI_KEY,
-  }).bindTools(tools);
-
+  });
   const systemMessage = new SystemMessage(
-    `You are a web automation assistant that can control browsers using Playwright. You will extract the URL in the input and correct it.
-    You can help users automate tasks on websites, fill forms, take screenshots, and extract information. For selectors, prefer simple, robust selectors like IDs (#login-button) or specific attributes ([data-test="submit"]).
-    When users ask you to automate a web task, break it down into clear steps and use the appropriate tools for each step.`,
+    `respond with: "default agent running" ALLWAYS NO MATTER WHAT`,
   );
-
-  const userMessage = new HumanMessage(`The URL to process is: ${state.url}`);
-  const messagesWithSystem = [systemMessage, userMessage, ...state.messages];
+  const messagesWithSystem = [systemMessage];
+  // console.log("default agent messages:", messagesWithSystem);
   const message = await model.invoke(messagesWithSystem);
   return {
     messages: [message],
   };
-
-  process.on("beforeExit", async () => {
-    if (client) {
-      await client.close();
-    }
-  });
 };
 
 export const croAgent = async (state) => {

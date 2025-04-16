@@ -7,12 +7,8 @@ import {
   messagesStateReducer,
 } from "@langchain/langgraph";
 import { BaseMessage, HumanMessage } from "@langchain/core/messages";
-import {
-  croAgent,
-  playwirghtAgent,
-  userAgent,
-  routerAgent,
-} from "./nodes/nodes";
+import { croAgent, userAgent, routerAgent, defaultAgent } from "./nodes/nodes";
+import { playwirghtAgentSubG } from "./nodes/react-pw-agent";
 
 export const extractorAnnotation = Annotation.Root({
   intent: Annotation<string>,
@@ -36,7 +32,7 @@ export const SharedAnnotation = Annotation.Root({
   ...extractorAnnotation.spec,
 });
 
-import { extractor, router } from "./nodes/nodes";
+import { extractor } from "./nodes/nodes";
 
 const workflow = new StateGraph(StateAnnotation)
   .addNode("extract", extractor)
@@ -44,28 +40,21 @@ const workflow = new StateGraph(StateAnnotation)
     input: SharedAnnotation,
     ends: ["SEO", "CRO", "UX"],
   })
-  //.addNode("routerAgent", routerAgent, {
-  //  ends: ["SEO", "CRO", "UX"],
-  //})
-  .addNode("SEO", playwirghtAgent)
+  .addNode("SEO", playwirghtAgentSubG, { input: SharedAnnotation })
   .addNode("CRO", croAgent)
   .addNode("UX", userAgent)
+  .addNode("default", defaultAgent)
   .addEdge("__start__", "extract")
   .addEdge("extract", "router")
-  //.addEdge("extract", "router")
-  //.addEdge("router", "routerAgent")
+  .addEdge("router", "default")
+  .addEdge("default", "__end__")
   .addEdge("SEO", "__end__")
   .addEdge("CRO", "__end__")
-  .addEdge("UX", "__end__")
-  .compile();
-
+  .addEdge("UX", "__end__");
 const checkpointer = new MemorySaver();
-//export const graph = workflow.compile({ checkpointer });
-const result = await workflow.invoke({
-  messages: [
-    new HumanMessage(
-      "I need some help with conversion optimization fenomenadigital.com",
-    ),
-  ],
-});
+export const graph = workflow.compile({ checkpointer });
+
+//const result = await workflow.invoke({
+//  messages: [new HumanMessage("I need some help with seo fenomenadigital.com")],
+//});
 //console.log(result);
