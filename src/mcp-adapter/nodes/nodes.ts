@@ -1,4 +1,3 @@
-import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -7,23 +6,23 @@ import { loadMcpTools } from "@langchain/mcp-adapters";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
-  StateGraph,
-  MessagesAnnotation,
-  MemorySaver,
-  Annotation,
-} from "@langchain/langgraph";
-import {
   AIMessage,
-  HumanMessage,
   SystemMessage,
+  HumanMessage,
 } from "@langchain/core/messages";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
+import { Command } from "@langchain/langgraph";
 
-import { StateAnnotation } from "../graph";
+import { SharedAnnotation, StateAnnotation } from "../graph";
 
-export const extractor = async (state: typeof StateAnnotation.State) => {
+export const extractor = async (state: typeof SharedAnnotation.State) => {
+  console.log("extractor is running");
   const schema = z.object({
-    intent: z.string().describe("This is what the user wants to do"),
+    intent: z
+      .string()
+      .describe(
+        "This is what the user wants to do, try to sumarize in two word",
+      ),
     url: z.string().describe("The user url"),
   });
 
@@ -31,14 +30,14 @@ export const extractor = async (state: typeof StateAnnotation.State) => {
     apiKey: process.env.OPENAI_KEY,
     model: "gpt-4o",
   }).withStructuredOutput(schema);
+
   const userMessage = state.messages[0].content;
-  //console.log(userMessage);
   const result = await model.invoke([
     {
       role: "system",
       content: `You are an URL extraction specialist with perfect accuracy.
         Given the user message: "${userMessage}"
-        Extract the URL and the user's intent.
+        Extract the URL and the user's INTENT.
 
         FORMATTING REQUIREMENTS:
         1. ALWAYS return URLs in proper format with the full protocol and domain.
@@ -46,6 +45,7 @@ export const extractor = async (state: typeof StateAnnotation.State) => {
         3. If a URL is provided without "www." and it's a common website, add it.
         4. Ensure there are no spaces or invalid characters in the URL.
         5. URLs must follow RFC standards and be directly usable in a browser.
+        6. Try to categorize intent as "SEO", "CRO" or "UX".
 
         Examples of correct URL formatting:
         - "google.com" → "https://www.google.com"
@@ -57,20 +57,21 @@ export const extractor = async (state: typeof StateAnnotation.State) => {
         Return the intent as a brief description of what the user wants to do with the URL.`,
     },
   ]);
-  const newMsg = new AIMessage({
-    content: {
-      intent: result.intent,
-      url: result.url,
-    },
-  }) as AIMessage;
-  const mess = { messages: [...state.messages, newMsg] };
-  console.log(mess);
-
-  return { messages: [...state.messages, newMsg] };
+  //console.log(result);
+  const newAIMessage = new AIMessage(
+    `info: {url: ${result.url} , intent:${result.intent}}`,
+  );
+  return {
+    url: result.url,
+    intent: result.intent,
+  };
 };
 
-export const router = async (state: typeof extractorAnnotation.State) => {
-  console.log(state.url);
+export const router = async (state: typeof SharedAnnotation) => {
+  const message = state["messages"];
+  const info = message[message.length - 1].content;
+  console.log(info);
+
   const routerSchema = z.object({
     step: z.enum(["SEO", "CRO", "UX"]).describe(" the next step to router to"),
     url: z.string(),
@@ -83,18 +84,44 @@ export const router = async (state: typeof extractorAnnotation.State) => {
   const routerDecision = await modelRouter.invoke([
     {
       role: "system",
-      content: `you are a router model select between "SEO", "CRO" and "UX" acconding to this intent: ${state.intent}, pass the url along making sure is correctly formated ${state.url}`,
+      content: `you are a router model select between "SEO", "CRO" and "UX" acconding to this info : ${info}`,
     },
   ]);
 
-  // console.log(routerDecision);
+  console.log(routerDecision);
   return {
     step: routerDecision.step,
     url: routerDecision.url,
   };
 };
 
-export const playwirghtAgent = async (state) => {
+export const routerAgent = async (state: typeof SharedAnnotation) => {
+  console.log("routerAgent running");
+  const url = state["url"];
+  const intent = state["intent"];
+  console.log("intent:", intent);
+  const goto = (intent: string) => {
+    if (intent.includes("SEO")) {
+      return "SEO";
+    } else if (intent.includes("CRO")) {
+      return "CRO";
+    } else if (intent.includes("UX")) {
+      return "UX";
+    } else {
+      return "SEO";
+    }
+  };
+  let decision = goto(intent);
+  console.log("router agent decision:", decision);
+
+  return new Command({
+    update: {},
+    goto: decision,
+  });
+};
+
+export const playwirghtAgent = async (state: typeof StateAnnotation) => {
+  console.log("PW Agent Running");
   console.log(state);
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -125,7 +152,7 @@ export const playwirghtAgent = async (state) => {
     additionalToolNamePrefix: "",
   });
 
-  const toolNode = new ToolNode<typeof MessagesAnnotation.State>(tools);
+  const toolNode = new ToolNode(tools);
 
   const model = new ChatOpenAI({
     modelName: "gpt-4o",
@@ -152,7 +179,7 @@ export const playwirghtAgent = async (state) => {
   });
 };
 
-export const croAgent = async (state: typeof MessagesAnnotation.State) => {
+export const croAgent = async (state) => {
   const model = new ChatOpenAI({
     modelName: "gpt-4o",
     apiKey: process.env.OPENAI_KEY,

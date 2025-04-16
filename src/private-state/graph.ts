@@ -11,6 +11,7 @@ const StateAnnotation = Annotation.Root({
 
 const urlAnnotation = Annotation.Root({
   url: Annotation<string>,
+  intent: Annotation<string>,
 });
 
 const sharedAnnotation = Annotation.Root({
@@ -20,12 +21,15 @@ const sharedAnnotation = Annotation.Root({
 
 const getUrl = async (state: typeof urlAnnotation.State) => {
   return {
-    url: "www.i2phi.com",
+    url: "https://www.i2phi.com",
+    intent: "User needs SEO",
   };
 };
 
 const setMessage = async (state: typeof sharedAnnotation.State) => {
-  let newAIMsg = new AIMessage(state.url);
+  let newAIMsg = new AIMessage(
+    `This is the url you need to use the tools with: ${state.url} and the user wants: ${state.intent}`,
+  );
 
   return {
     messages: [newAIMsg],
@@ -40,6 +44,6 @@ const workflow = new StateGraph(StateAnnotation)
   .compile();
 
 const res = await workflow.invoke({
-  messages: [new HumanMessage("hello there")],
+  messages: [new HumanMessage("hello there i need help with SEO with i2phi")],
 });
 console.log(res);

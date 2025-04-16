@@ -129,8 +129,3 @@ export const graph = workflow.compile({
   interruptBefore: [],
   interruptAfter: [],
 });
-
-const userTest = await graph.invoke({
-  input:
-    "hey my i want to know if my seo is good  but can you say it in spanish, please",
-});
