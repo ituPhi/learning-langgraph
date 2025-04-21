@@ -34,8 +34,8 @@ const callModel = async (state: typeof MessagesAnnotation.State) => {
     "DO NOT USE Tools That Do not match the operation. REFUSE TO PERFOM ANY OTHER OPERATION OTHER THAN MULTIPLICATION, if asked to PERFOM +,-,/ say you DO NO have the necesary tools and ask for a new question",
   );
   const messagesWithSystem = [systemMessage, ...state.messages];
-  const message = model.invoke(messagesWithSystem);
-  const res = await message;
+  const message = await model.invoke(messagesWithSystem);
+  const res = message;
   return {
     messages: [res],
   };
