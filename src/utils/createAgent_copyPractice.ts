@@ -1,70 +1,35 @@
-import { MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
-import {
-  ChatPromptTemplate,
-  MessagesPlaceholder,
-} from "@langchain/core/prompts";
-import { Runnable } from "@langchain/core/runnables";
-import { HumanMessage } from "@langchain/core/messages";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { z } from "zod";
+import { BaseMessage } from "@langchain/core/messages";
+let messages: BaseMessage[] = [];
 
-async function createAgent({
-  llm,
-  systemPrompt,
-}: {
-  llm: ChatOpenAI;
-  systemPrompt: string;
-}): Promise<Runnable> {
-  let prompt = ChatPromptTemplate.fromMessages([
-    ["system", "these are your instructions : {instructions}"],
-    new MessagesPlaceholder("messages"),
-  ]);
-  prompt = await prompt.partial({ instructions: systemPrompt });
-  return prompt.pipe(llm);
-}
+const messageSchema = z.object({
+  content: z.string().describe("The content of the message"),
+  role: z.string().describe("The role of the message"),
+});
 
-async function runAgent(props: {
-  state: typeof MessagesAnnotation.State;
-  agent: Runnable;
-  name: string;
-}) {
-  const { agent, name, state } = props;
-  let result = await agent.invoke(state);
-
-  return {
-    messages: [result],
-    name: name,
-  };
-}
+const classifcationSchema = z.object({
+  sentiment: z
+    .string()
+    .describe("categorize the sentiment as Positive or Negative  "),
+  language: z.string().describe("What is the language of the query"),
+  reason: z.string().describe("The reason why you chose this Classification"),
+  messages: z.array(messageSchema).describe("The messages from USER and AI"),
+});
 
 const llm = new ChatOpenAI({
   apiKey: process.env.OPENAI_KEY,
-});
+}).withStructuredOutput(classifcationSchema, { name: "SentimentAnalysis" });
 
-async function agentNode(state: typeof MessagesAnnotation.State) {
-  const researcher = await createAgent({
-    llm: llm,
-    systemPrompt: "Respond in Spanish",
-  });
+let pt =
+  PromptTemplate.fromTemplate(`extract the following information from the following passage.
+Only extract the properties mentioned in the 'Classification' function. Sentiment MUST be ONLY Positive or Negative
+Passage:{input}`);
 
-  return runAgent({
-    state: state,
-    name: "researcher",
-    agent: researcher,
-  });
-}
+//let fpt = await pt.format({ input: "I am very pissed today" });
+//const res = await llm.invoke(fpt);
+//console.log(res);
 
-const workflow = new StateGraph(MessagesAnnotation)
-  .addNode("researcher", agentNode)
-  .addEdge("__start__", "researcher")
-  .addEdge("researcher", "__end__")
-  .compile();
-
-const test = async () => {
-  const response = await workflow.invoke({
-    messages: [new HumanMessage("Hi how are you today?")],
-  });
-  return response;
-};
-
-const res = await test();
-console.log(res);
+const res2 = await pt.pipe(llm).invoke({ input: "I feel happy today " });
+console.log(res2);

@@ -28,7 +28,10 @@ function routerDecision(state: typeof StateAnnotation.State) {
   }
 }
 
-const workflow = new StateGraph(StateAnnotation)
+const workflow = new StateGraph({
+  input: StateAnnotation,
+  output: StateAnnotation,
+})
   .addNode("router", routerAgent)
   .addNode("seo", seoAgent)
   .addNode("cro", croAgent)
@@ -39,8 +42,8 @@ const workflow = new StateGraph(StateAnnotation)
 
 export const graph = workflow.compile();
 
-//const res = await graph.invoke({
-//  input: "i need help with my SEO",
-//  url: "https://www.i2phi.com",
-//});
-//console.log(res);
+const res = await graph.invoke({
+  input: "i need help with my SEO",
+  url: "https://www.i2phi.com",
+});
+console.log(res);
