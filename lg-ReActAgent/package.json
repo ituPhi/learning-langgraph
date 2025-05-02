@@ -1,0 +1,22 @@
+{
+  "name": "basic-react-agent",
+  "version": "1.0.0",
+  "description": "This is a simple reaAct agent template, for creating custom Agents with tools",
+  "main": "graph.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@langchain/community": "^0.3.37",
+    "@langchain/langgraph": "^0.2.57",
+    "@langchain/openai": "^0.4.8",
+    "express": "^4.21.2"
+  },
+  "overrides": {
+    "@langchain/core": "^0.3.43"
+  }
+}
