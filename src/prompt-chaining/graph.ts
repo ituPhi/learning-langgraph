@@ -33,7 +33,7 @@ async function improveJoke(state: typeof stateAnnotation.State) {
   return { improvedJoke: msg.content };
 }
 
-//create final jode
+//create final joke
 async function finilizeJoke(state: typeof stateAnnotation.State) {
   const msg = await model.invoke(
     `Add a twist to this joke: ${state.improvedJoke}`,
