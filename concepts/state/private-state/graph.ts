@@ -14,6 +14,7 @@ const urlAnnotation = Annotation.Root({
   intent: Annotation<string>,
 });
 
+// merging two annnotations
 const sharedAnnotation = Annotation.Root({
   ...StateAnnotation.spec,
   ...urlAnnotation.spec,

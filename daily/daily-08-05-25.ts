@@ -1,3 +1,4 @@
+// this is a basic implementation of a custom create agent pattern
 import { ChatOpenAI } from "@langchain/openai";
 import { Runnable } from "@langchain/core/runnables";
 import { MessagesPlaceholder, PromptTemplate } from "@langchain/core/prompts";

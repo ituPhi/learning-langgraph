@@ -11,7 +11,7 @@ const system = SystemMessagePromptTemplate.fromTemplate(
 const human = HumanMessagePromptTemplate.fromTemplate(
   "Please help me about {topic} in {domain}",
 );
-console.log(human);
+//console.log(human);
 const chat = ChatPromptTemplate.fromMessages([system, human]); // here we are combining into one chat prompt using messages created from template
 
 console.log(chat);

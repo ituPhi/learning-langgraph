@@ -2,6 +2,7 @@ import { Command, MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import fs from "fs";
+
 const model = new ChatOpenAI({
   apiKey: process.env.OPENAI_KEY,
   model: "gpt-4o",

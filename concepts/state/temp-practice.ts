@@ -2,10 +2,11 @@ import { StateGraph, Annotation } from "@langchain/langgraph";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
+import { BaseMessage } from "@langchain/core/messages";
 
 const StateAnnotation = Annotation.Root({
   reason: Annotation<string>,
-  messages: Annotation<string[]>({
+  messages: Annotation<BaseMessage[]>({
     reducer: (a, b) => a.concat(b),
     default: () => [],
   }),
@@ -46,10 +47,20 @@ const extractor = async () => {
 
   Return the intent as a brief description of what the user wants to do with the URL.
   `);
-  const res = prompt.pipe(model).invoke({
-    prompt:
-      "hey i would like to analyze this website fenomenadigital.com to improve my SEO",
-  });
+
+  const res = prompt.pipe(model).invoke(
+    {
+      prompt:
+        "hey i would like to analyze this website fenomenadigital.com to improve my SEO",
+    },
+    {
+      recursionLimit: 3,
+      runName: "firstRun",
+      runId: "992",
+      tags: ["test", "test2"],
+      configurable: {},
+    },
+  );
   return res;
 };
 

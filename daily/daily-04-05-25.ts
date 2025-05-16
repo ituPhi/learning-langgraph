@@ -28,6 +28,7 @@ const chain = RunnableSequence.from([
   {
     fullWebsite: RunnableSequence.from([chat1, llm, new StringOutputParser()]),
   },
+  // (prev) => console.log(prev), // this will log the full website
   analyze,
   llm,
 ]);
