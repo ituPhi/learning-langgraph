@@ -62,7 +62,10 @@ async function customToolNode(
   const toolCall = response.tool_calls;
 
   const result = await fetchFromApi.invoke({ toolCall });
-  let toolMessage = new ToolMessage({ content: result, id: result.id });
+  let toolMessage = new ToolMessage({
+    content: result,
+    tool_call_id: result.id,
+  });
 
   console.log(toolMessage);
   return {

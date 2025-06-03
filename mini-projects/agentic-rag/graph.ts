@@ -9,8 +9,7 @@ import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
-import { z } from "zod";
-import * as fs from "fs/promises";
+
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { tools } from "./utils/retreiver";
 import { ChatOpenAI } from "@langchain/openai";
@@ -69,8 +68,8 @@ const graph = new StateGraph(StateAnnotation)
   .addEdge("retrieve", "agent")
   .compile();
 
-//const state = {
-//  messages: [new HumanMessage("what can you tell me about agents")],
-//};
-//const res = await graph.invoke(state, { recursionLimit: 4 });
-//console.log(res);
+const state = {
+  messages: [new HumanMessage("what can you tell me about agents")],
+};
+const res = await graph.invoke(state, { recursionLimit: 4 });
+console.log(res);

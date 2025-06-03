@@ -17,6 +17,7 @@
     "@langchain/langgraph": "^0.2.62",
     "@langchain/langgraph-sdk": "^0.0.66",
     "@langchain/mcp-adapters": "^0.4.2",
+    "@langchain/ollama": "^0.2.0",
     "@langchain/openai": "^0.5.2",
     "cheerio": "^1.0.0",
     "eventsource": "^3.0.6",

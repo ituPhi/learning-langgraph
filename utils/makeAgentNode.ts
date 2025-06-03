@@ -117,7 +117,7 @@ export const graph = new StateGraph(MessagesAnnotation)
 // );
 // console.log(res.messages);
 
-const drawableGraph = await graph.getGraphAsync();
-const image = await drawableGraph.drawMermaidPng();
-const arrayBuffer = await image.arrayBuffer();
-fs.writeFileSync("graph.png", Buffer.from(arrayBuffer));
+//const drawableGraph = await graph.getGraphAsync();
+//const image = await drawableGraph.drawMermaidPng();
+//const arrayBuffer = await image.arrayBuffer();
+//fs.writeFileSync("graph.png", Buffer.from(arrayBuffer));
