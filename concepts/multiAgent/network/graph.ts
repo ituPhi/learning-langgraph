@@ -1,50 +1,43 @@
-import { Command, MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
+import { MessagesAnnotation } from "@langchain/langgraph";
+import { HumanMessage } from "@langchain/core/messages";
 import { z } from "zod";
-
-const model = new ChatOpenAI({
+const llm = new ChatOpenAI({
+  apiKey: process.env.OPENAI_KEY,
   model: "gpt-4o-mini",
+  temperature: 0.7,
 });
 
-const outputSchema = z.object({
-  next_agent: z.string().describe("the next agent we should send to"),
-  content: z.string(),
-});
+async function createAgent(state: typeof MessagesAnnotation.State) {
+  const destinations = ["__end__", "draft"];
+  const responseSchema = z.object({
+    response: z
+      .string()
+      .min(1)
+      .max(100)
+      .describe("The response from the agent"),
+    goto: z.string().min(1).max(100).describe("The next agent to call"),
+  });
 
-const agent = async (state: typeof MessagesAnnotation) => {
-  const response = await model.withStructuredOutput(outputSchema).invoke([
+  const messages = [
     {
       role: "system",
-      content: "You are a helpful assistant.",
+      content:
+        "You are a helpful assistant. Call 'draft' agent to draft a post ",
     },
-  ]);
+    ...state.messages,
+  ];
 
-  return new Command({
-    goto: response.next_agent,
-    update: {
-      messages: [response.content],
-    },
-  });
+  const response = await llm
+    .withStructuredOutput(responseSchema, { name: "agent" })
+    .invoke(messages);
+
+  return response;
+}
+
+const state: typeof MessagesAnnotation.State = {
+  messages: [new HumanMessage("respond in spanish please")],
 };
 
-const agent2 = async (state: typeof MessagesAnnotation) => {
-  const response = await model.withStructuredOutput(outputSchema).invoke([
-    {
-      role: "system",
-      content: "You are a helpful assistant.",
-    },
-  ]);
-
-  return new Command({
-    goto: response.next_agent,
-    update: {
-      messages: [response.content],
-    },
-  });
-};
-
-const graph = new StateGraph(MessagesAnnotation)
-  .addNode("agent", agent, { ends: ["agent2", "__end__"] })
-  .addNode("agent2", agent2, { ends: ["agent", "__end__"] })
-  .addEdge("__start__", "agent")
-  .compile();
+const test = await createAgent(state);
+console.log(test);

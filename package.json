@@ -19,6 +19,7 @@
     "@langchain/mcp-adapters": "^0.4.2",
     "@langchain/ollama": "^0.2.0",
     "@langchain/openai": "^0.5.2",
+    "@trigger.dev/sdk": "^3.3.17",
     "cheerio": "^1.0.0",
     "eventsource": "^3.0.6",
     "extended-eventsource": "^2.1.0",
@@ -26,5 +27,8 @@
   },
   "overrides": {
     "@langchain/core": "^0.3.43"
+  },
+  "devDependencies": {
+    "@trigger.dev/build": "^3.3.17"
   }
 }

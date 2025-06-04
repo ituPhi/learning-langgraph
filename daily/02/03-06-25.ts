@@ -1,3 +1,4 @@
+// this is a very cool abstraction to combine react agent with a shouldContinue function
 import { ChatOllama } from "@langchain/ollama";
 import { ChatOpenAI } from "@langchain/openai";
 import { Runnable } from "@langchain/core/runnables";
@@ -95,7 +96,16 @@ const graph = new StateGraph(MessagesAnnotation)
   .addEdge("tool", "agent")
   .compile();
 
-const testResponse = await graph.invoke({
-  messages: new HumanMessage("add 2 + 6"),
-});
-console.log(testResponse.messages[testResponse.messages.length - 1].content);
+const testResponse = await graph.invoke(
+  {
+    messages: new HumanMessage("add 2 + 6"),
+  },
+  {
+    recursionLimit: 5,
+    runName: "test",
+    configurable: {
+      name: "lol",
+    },
+  },
+);
+console.log(testResponse);
