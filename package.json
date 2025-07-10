@@ -5,8 +5,8 @@
   "main": "./src/router-agent/graph.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npx tsx --env-file=.env ./src/router-agent-test/graph.ts",
-    "preview": "langgraphjs dev"
+    "preview": "npx tsx --env-file=.env ./src/router-agent-test/graph.ts",
+    "dev": "langgraphjs dev"
   },
   "keywords": [],
   "author": "Juan Iturbe",

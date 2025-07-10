@@ -3,6 +3,8 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 
+// create react agent prebuilt testing
+
 const llm = new ChatOpenAI({
   apiKey: process.env.OPENAI_KEY,
   modelName: "gpt-3.5-turbo",

@@ -1,13 +1,12 @@
 import { tasks } from "@trigger.dev/sdk/v3";
 
-const payload: string = "Sharks";
+const payload: string = "sharks";
 
 async function callTask(payload: string) {
-  //console.log(payload);
-  const handle = await tasks.trigger("runnableSequence_task", {
+  //execute two chains, one for poem, one for joke, in parallel inside a single task
+  const handle = await tasks.trigger("runnableMap_task", {
     payload,
   });
-
   return Response.json(handle);
 }
 const run = await callTask(payload);

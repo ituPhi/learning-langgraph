@@ -7,6 +7,14 @@ import { StringOutputParser } from "@langchain/core/output_parsers";
 export const runnableSequence_task = task({
   id: "runnableSequence_task",
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute
+  retry: {
+    // add retry, useful for AI
+    maxAttempts: 10,
+    factor: 1.8,
+    minTimeoutInMs: 500,
+    maxTimeoutInMs: 30_000,
+    randomize: false,
+  },
   onStart: async () => logger.log("starting runnable sequence"),
   run: async (payload: any, { ctx }) => {
     const llm = new ChatOpenAI({

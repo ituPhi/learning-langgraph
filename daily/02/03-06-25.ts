@@ -1,7 +1,7 @@
 // this is a very cool abstraction to combine react agent with a shouldContinue function
 import { ChatOllama } from "@langchain/ollama";
 import { ChatOpenAI } from "@langchain/openai";
-import { Runnable } from "@langchain/core/runnables";
+import { Runnable, RunnableConfig } from "@langchain/core/runnables";
 import { StructuredToolInterface, tool } from "@langchain/core/tools";
 import {
   ChatPromptTemplate,
